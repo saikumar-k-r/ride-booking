@@ -1,0 +1,829 @@
+{
+  "info": {
+    "_postman_id": "5ce67b6f-da04-4675-bfe7-aa5fd2c765cd",
+    "name": "New Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57149937",
+    "_collection_link": "https://go.postman.co/collection/57149937-5ce67b6f-da04-4675-bfe7-aa5fd2c765cd?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "driver&vehicels apis",
+      "item": [
+        {
+          "name": "authentication",
+          "item": [
+            {
+              "name": "http://127.0.0.1:8000/api/token/",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"username\": \"saaa\",\r\n    \"password\": \"ss1234567890\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/token/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "token",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "New Request",
+              "request": {
+                "method": "GET",
+                "header": []
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "drivers",
+          "item": [
+            {
+              "name": "http://127.0.0.1:8000/api/drivers/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDU4NDg0LCJpYXQiOjE3ODY0NTgxODQsImp0aSI6IjRlOGJjZGY3NjQ3OTQwMGNhZDdhOGQ1YmM5MDdhY2ViIiwidXNlcl9pZCI6IjEifQ.3LkB8JWgDSIDAEUHjQCrViUBFgm_pszI9RKKIJv-Lpc",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"user\": 2,\r\n  \"license_number\": \"DL987654321\",\r\n  \"is_verified\": false,\r\n  \"is_active\": true\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/drivers/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "drivers",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "drivers id",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{json_web_token_14rc%7D}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/drivers/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "drivers",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update drive",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDYxMDE1LCJpYXQiOjE3ODY0NjA3MTUsImp0aSI6IjUzNTlkMzBmNGYwNTRjNWNiZTlhY2RkM2YzMzM3YTFlIiwidXNlcl9pZCI6IjEifQ.hyry1Nc_zopQEWgxZFQxTdS9XYgVkcblWHLEAzMiFso",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"license_number\": \"DL123456790\",\r\n    \"is_verified\": true,\r\n    \"is_active\": true\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/drivers/5b63242a-e370-4a03-849a-425af2d5805b/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "drivers",
+                    "5b63242a-e370-4a03-849a-425af2d5805b",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "vehicals",
+          "item": [
+            {
+              "name": "http://127.0.0.1:8000/api/vehicles/bf5d654d-b91b-4b3d-baaa-7511d877bcca",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDQ4NzM4LCJpYXQiOjE3ODY0NDg0MzgsImp0aSI6IjA1NTY5MDc0ODljYzRkNDJiYTg3OGQyNDAwMzE1YWM4IiwidXNlcl9pZCI6IjEifQ.vijzN-TATQr6WjTGMTjSmEZPlbw8FEKW9dUXKrWo8RU",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"model_name\": \"Honda City Updated\",\r\n    \"is_active\": false\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/bf5d654d-b91b-4b3d-baaa-7511d877bcca/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    "bf5d654d-b91b-4b3d-baaa-7511d877bcca",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "vehical delete",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDYzMDY5LCJpYXQiOjE3ODY0NjI3NjksImp0aSI6IjBhYTE5MmMwODVkMjQ0ZGFiNTZjNzVhZGEyYzU2YzAwIiwidXNlcl9pZCI6IjEifQ.k6ukbwR1aTw8zM76aomr1fXZc8EHd4bPIgu49OOiKwo",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/bf5d654d-b91b-4b3d-baaa-7511d877bcca/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    "bf5d654d-b91b-4b3d-baaa-7511d877bcca",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "http://127.0.0.1:8000/api/vehicles/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{auth_secret_0nvi}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "vehical delete",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDYzMDY5LCJpYXQiOjE3ODY0NjI3NjksImp0aSI6IjBhYTE5MmMwODVkMjQ0ZGFiNTZjNzVhZGEyYzU2YzAwIiwidXNlcl9pZCI6IjEifQ.k6ukbwR1aTw8zM76aomr1fXZc8EHd4bPIgu49OOiKwo",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/bf5d654d-b91b-4b3d-baaa-7511d877bcca/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    "bf5d654d-b91b-4b3d-baaa-7511d877bcca",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "filtering and searching",
+          "item": [
+            {
+              "name": "http://127.0.0.1:8000/api/vehicles/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDU0MDU5LCJpYXQiOjE3ODY0NTM3NTksImp0aSI6ImMwMDMzMzczNDFmNTQ1Mzk4YjM1M2FhZWYxMWE0N2M3IiwidXNlcl9pZCI6IjEifQ.HwUpJ-aPcqIRU7h8vLCWNr_BU_85MLdIntHfrHxi2Sw",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/?is_active=true",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "is_active",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "http://127.0.0.1:8000/api/vehicles/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDU0MjA5LCJpYXQiOjE3ODY0NTM5MDksImp0aSI6IjA4MGFjNWFjM2VhMjQ4ZTRhMWZhM2FiZjgxZWEyNzQ5IiwidXNlcl9pZCI6IjEifQ.s5omxPEP2jrQtSTjV-DP6fImi5AVnIgPkkAaN9er8kg",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/?page=2",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "2",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "http://127.0.0.1:8000/api/drivers/00000000-0000-0000-0000-000000000000/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDY0Mjc4LCJpYXQiOjE3ODY0NjM5NzgsImp0aSI6IjU1ODM5MzMwNGMyNjQxODU4OGU2N2Y0MzZhMjhjMzE4IiwidXNlcl9pZCI6IjEifQ.thNYB0l_MPNJ6FhHf_3XwIq912hqj56463rke42EHis",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/drivers/00000000-0000-0000-0000-000000000000/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "drivers",
+                    "00000000-0000-0000-0000-000000000000",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "error hanling",
+          "item": [
+            {
+              "name": "http://127.0.0.1:8000/api/vehicles/00000000-0000-0000-0000-000000000000/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDU0NjM2LCJpYXQiOjE3ODY0NTQzMzYsImp0aSI6ImQ4MzJiYzYwZDlhYjRjYjY4OTEyODQxNGQwZTNkMmJhIiwidXNlcl9pZCI6IjEifQ.AGH24Y1tsPbk6chYGwSb0_K7aeUV5yk6OgBuj14WP6g",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/00000000-0000-0000-0000-000000000000/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    "00000000-0000-0000-0000-000000000000",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "http://127.0.0.1:8000/api/driverss/00000000-0000-0000-0000-000000000000/",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg2NDY0NjA1LCJpYXQiOjE3ODY0NjQzMDUsImp0aSI6IjU3MTdlNzdkMzY1NzRlYWU5ZjMxN2Y5NzFlMWFjYmI5IiwidXNlcl9pZCI6IjEifQ.BGBjqma2o8wXRRRvwKvHxOsrOZJoKlTKeLq1xs1w5dg",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/driverss/00000000-0000-0000-0000-000000000000/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "driverss",
+                    "00000000-0000-0000-0000-000000000000",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "unautharization",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"driver\": \"YOUR_DRIVER_UUID\",\r\n  \"vehicle_type\": \"YOUR_VEHICLE_TYPE_UUID\",\r\n  \"registration_number\": \"AP29TEST009\",\r\n  \"model_name\": \"Honda\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/vehicles/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "vehicles",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "http://127.0.0.1:8000/api/drivers/",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"driver\": \"YOUR_DRIVER_UUID\",\r\n  \"vehicle_type\": \"YOUR_VEHICLE_TYPE_UUID\",\r\n  \"registration_number\": \"AP29TEST009\",\r\n  \"model_name\": \"Honda\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/drivers/",
+                  "protocol": "http",
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
+                  "port": "8000",
+                  "path": [
+                    "api",
+                    "drivers",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Register API",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"sai@example.com\",\r\n    \"username\": \"saikumar\",\r\n    \"password\": \"Sai@12345\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/register/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "register",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "http://127.0.0.1:8000/api/login/",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg1OTMwNTQwLCJpYXQiOjE3ODU5Mjk2NDAsImp0aSI6IjBjYjc0ZGQ1OTI1ODQxYmZiZGM1ZDJmZjY0ZmMxZWFjIiwidXNlcl9pZCI6IjllZmU2YzMwLWQzNzMtNDZjZi04MGZhLWZjNGY5NTcwNWRiNCJ9.WtMB292aOf9un61-xJ3BFBUujLLRDnHz1FwKgFgYCmg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/lprofile/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "lprofile",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "http://127.0.0.1:8000/api/login/",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg1OTMxMTY5LCJpYXQiOjE3ODU5MzAyNjksImp0aSI6ImYxZDQxMWQwYmZiZTQ0NWI5MTlkM2U3YWQ4M2Y5MzEzIiwidXNlcl9pZCI6IjllZmU2YzMwLWQzNzMtNDZjZi04MGZhLWZjNGY5NTcwNWRiNCJ9.ZuD_0l9T7t49Jn6-r6FwD8NgafEWO-N9cN35j2V0Ppo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"current_password\": \"Sai@123456\",\r\n    \"new_password\": \"Sai@1234567\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/change-password/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "change-password",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "http://127.0.0.1:8000/api/logout/",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg1OTI4NzAwLCJpYXQiOjE3ODU5Mjc4MDAsImp0aSI6IjNlOTg3MjU3NmQ3YjQzNzU5YjkzNjNlMDJjMmU5NDY1IiwidXNlcl9pZCI6IjllZmU2YzMwLWQzNzMtNDZjZi04MGZhLWZjNGY5NTcwNWRiNCJ9.ECy3HbKf-FHiHNfZI4MkqtUeCGKq2whYpk8rOx2ynuc",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"refresh\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc4NjAxNDIwMCwiaWF0IjoxNzg1OTI3ODAwLCJqdGkiOiIyN2FjZDE3NzRlNWY0NzY0YmJkY2IwNjg1ZTA5MjUxMSIsInVzZXJfaWQiOiI5ZWZlNmMzMC1kMzczLTQ2Y2YtODBmYS1mYzRmOTU3MDVkYjQifQ.woRAL7ja2cOGxuDfBMaExDPaVeRl9HP0EQlpDhH0nOI\"\r\n    \r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/logout/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "logout",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "http://127.0.0.1:8000/api/login/",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"sai@example.com\",\r\n    \"password\": \"Sai@1234567\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/login/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "New Request",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "json_web_token_14rc",
+      "secret": true
+    },
+    {
+      "key": "auth_secret_0nvi",
+      "secret": true
+    }
+  ]
+}
