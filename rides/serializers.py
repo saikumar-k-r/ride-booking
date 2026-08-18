@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import DriverProfile, Vehicle, Ride
+from .models import DriverProfile, Vehicle, Ride,Location
 
 class DriverSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
@@ -148,3 +148,14 @@ class RideSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ride
         fields = "__all__"    
+class DriverLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = [
+            "id",
+            "latitude",
+            "longitude",
+            "last_updated",
+            "is_available",
+        ]
+        read_only_fields = ["id", "last_updated"]        

@@ -108,6 +108,13 @@ class Location(models.Model):
         default=uuid.uuid4,
         editable=False
     )
+    driver = models.ForeignKey(
+    DriverProfile,
+    on_delete=models.CASCADE,
+    related_name="locations",
+    null=True,
+    blank=True,
+    )
 
     address = models.CharField(max_length=255)
 
@@ -122,6 +129,19 @@ class Location(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    is_available = models.BooleanField(default=True)
+
+    availability_status = models.CharField(
+      max_length=10,
+      choices=[
+        ("ONLINE", "Online"),
+        ("OFFLINE", "Offline"),
+        ("BUSY", "Busy"),
+    ],
+      default="ONLINE"
+    )
 
     class Meta:
         indexes = [
@@ -224,4 +244,4 @@ class Ride(models.Model):
             models.Index(fields=["status", "created_at"]),
         ]
     def __str__(self):
-        return str(self.id)                    
+        return str(self.id)   

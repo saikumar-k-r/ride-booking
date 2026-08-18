@@ -18,7 +18,9 @@ from .views import (
      RideViewSet,
      ride_aggregations,
      slow_rides,
-     optimized_rides
+     optimized_rides,
+      DriverLocationAPIView,
+       nearby_drivers,
 
 )
 
@@ -119,4 +121,14 @@ path(
 ),
 path("slow-rides/", slow_rides, name="slow-rides"),
 path("optimized-rides/", optimized_rides, name="optimized-rides"),
+path(
+    "drivers/location/",
+    DriverLocationAPIView.as_view(),
+    name="driver-location",
+),
+path(
+    "drivers/nearby/",
+    nearby_drivers,
+    name="nearby-drivers",
+),
 ]

@@ -12,9 +12,11 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from django.db import connection
 from django.db.models import Count, Sum, Avg, Min, Max
+from .serializers import DriverLocationSerializer
+from rides.services.location_service import find_nearby_drivers
 
 from .permissions import IsAdminUserRole, IsDriverUser
-from .models import DriverProfile, Vehicle,Ride,RideStatus
+from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
 from .serializers import DriverSerializer, VehicleSerializer, RideSerializer
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .services.ride_queries import (
@@ -569,3 +571,75 @@ def slow_rides(request):
         "query_count": len(connection.queries),
         "data": data,
     })
+class DriverLocationAPIView(APIView):
+
+    def post(self, request):
+        try:
+            driver = DriverProfile.objects.get(user=request.user)
+        except DriverProfile.DoesNotExist:
+            return Response(
+                {"error": "Driver profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = DriverLocationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            location = Location.objects.filter(
+                driver=driver
+            ).order_by("-last_updated").first()
+
+            if location:
+                location.latitude = serializer.validated_data["latitude"]
+                location.longitude = serializer.validated_data["longitude"]
+                location.save()
+            else:
+                location = Location.objects.create(
+                    driver=driver,
+                    latitude=serializer.validated_data["latitude"],
+                    longitude=serializer.validated_data["longitude"]
+                )
+
+            return Response(
+                DriverLocationSerializer(location).data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+@api_view(["GET"])
+def nearby_drivers(request):
+    latitude = request.query_params.get("latitude")
+    longitude = request.query_params.get("longitude")
+    radius = request.query_params.get("radius")
+
+    if not latitude or not longitude or not radius:
+        return Response(
+            {
+                "error": "latitude, longitude and radius are required."
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+        radius = float(radius)
+    except ValueError:
+        return Response(
+            {"error": "latitude, longitude and radius must be numbers."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    drivers = find_nearby_drivers(
+        latitude,
+        longitude,
+        radius
+    )
+
+    return Response(
+        drivers,
+        status=status.HTTP_200_OK
+    )    
