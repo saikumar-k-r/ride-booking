@@ -14,6 +14,9 @@ from django.db import connection
 from django.db.models import Count, Sum, Avg, Min, Max
 from .serializers import DriverLocationSerializer
 from rides.services.location_service import find_nearby_drivers
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 
 from .permissions import IsAdminUserRole, IsDriverUser
 from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
@@ -183,10 +186,24 @@ class RideStatusAPIView(generics.UpdateAPIView):
         ride.status = new_status_obj
         ride.save()
 
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+          f"ride_{ride.id}",
+          {
+            "type": "ride_update",
+            "data": {
+            "ride_id": str(ride.id),
+            "status": new_status_obj.code,
+            "message": f"Ride status changed to {new_status_obj.name}",
+          },
+        },
+       )
+
         return Response(
-            RideSerializer(ride).data,
-            status=200
-        )  
+          RideSerializer(ride).data,
+          status=200
+       )
 class RideAcceptAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
