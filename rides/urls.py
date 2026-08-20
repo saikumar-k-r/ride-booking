@@ -21,6 +21,9 @@ from .views import (
      optimized_rides,
       DriverLocationAPIView,
        nearby_drivers,
+       NotificationListView,
+    NotificationReadView,
+    NotificationReadAllView,
 
 )
 
@@ -131,4 +134,22 @@ path(
     nearby_drivers,
     name="nearby-drivers",
 ),
+path(
+    "notifications/",
+    NotificationListView.as_view(),
+    name="notifications",
+),
+
+path(
+    "notifications/<uuid:pk>/read/",
+    NotificationReadView.as_view(),
+    name="notification-read",
+),
+
+path(
+    "notifications/read-all/",
+    NotificationReadAllView.as_view(),
+    name="notifications-read-all",
+),
+
 ]

@@ -16,7 +16,9 @@ from .serializers import DriverLocationSerializer
 from rides.services.location_service import find_nearby_drivers
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
+from rest_framework.pagination import PageNumberPagination
+from .models import Notification
+from .serializers import NotificationSerializer
 
 from .permissions import IsAdminUserRole, IsDriverUser
 from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
@@ -660,3 +662,62 @@ def nearby_drivers(request):
         drivers,
         status=status.HTTP_200_OK
     )    
+class NotificationPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(
+            user=request.user
+        ).order_by("-created_at")
+
+        paginator = NotificationPagination()
+        page = paginator.paginate_queryset(notifications, request)
+
+        serializer = NotificationSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class NotificationReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            notification = Notification.objects.get(
+                id=pk,
+                user=request.user
+            )
+        except Notification.DoesNotExist:
+            return Response(
+                {"detail": "Notification not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        notification.is_read = True
+        notification.save(update_fields=["is_read"])
+
+        return Response(
+            NotificationSerializer(notification).data,
+            status=status.HTTP_200_OK
+        )
+
+
+class NotificationReadAllView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        updated = Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).update(is_read=True)
+
+        return Response({
+            "message": "All notifications marked as read.",
+            "updated_count": updated
+        })
