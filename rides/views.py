@@ -6,7 +6,7 @@ from rest_framework import status
 from .services.fare_service import calculate_fare
 from .services.ride_service import accept_ride
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -19,6 +19,7 @@ from channels.layers import get_channel_layer
 from rest_framework.pagination import PageNumberPagination
 from .models import Notification
 from .serializers import NotificationSerializer
+from django.core.cache import cache
 
 from .permissions import IsAdminUserRole, IsDriverUser
 from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
@@ -629,6 +630,7 @@ class DriverLocationAPIView(APIView):
             status=status.HTTP_400_BAD_REQUEST
         )
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def nearby_drivers(request):
     latitude = request.query_params.get("latitude")
     longitude = request.query_params.get("longitude")
@@ -651,12 +653,20 @@ def nearby_drivers(request):
             {"error": "latitude, longitude and radius must be numbers."},
             status=status.HTTP_400_BAD_REQUEST
         )
+    cache_key = f"nearby_drivers:{latitude}:{longitude}:{radius}"
+
+    cached_drivers = cache.get(cache_key)
+
+    if cached_drivers is not None:
+       return Response(cached_drivers)
 
     drivers = find_nearby_drivers(
         latitude,
         longitude,
         radius
     )
+    cache.set(cache_key, drivers, timeout=60)
+
 
     return Response(
         drivers,
