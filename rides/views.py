@@ -11,7 +11,9 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from django.db import connection
-from django.db.models import Count, Sum, Avg, Min, Max
+from django.db.models import Q, F, Count, Sum, Avg, Min, Max
+from rides.models import Ride
+
 from .serializers import DriverLocationSerializer
 from rides.services.location_service import find_nearby_drivers
 from asgiref.sync import async_to_sync
@@ -26,6 +28,7 @@ from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
 from .serializers import DriverSerializer, VehicleSerializer, RideSerializer
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .services.ride_queries import (
+    get_ride_history,
     get_active_rides,
     get_completed_rides,
     get_cancelled_rides,
@@ -422,6 +425,7 @@ class RideViewSet(viewsets.ModelViewSet):
 # ============================================================
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def active_rides(request):
     rides = get_active_rides(request.user)
 
@@ -432,23 +436,9 @@ def active_rides(request):
             rides.values(
                 "id",
                 "status__code",
-                "created_at",
-            )
-        ),
-    })
-
-
-@api_view(["GET"])
-def completed_rides(request):
-    rides = get_completed_rides()
-
-    return Response({
-        "success": True,
-        "count": rides.count(),
-        "data": list(
-            rides.values(
-                "id",
-                "status__code",
+                "driver__id",
+                "driver__user__username",
+                "vehicle__registration_number",
                 "fare",
                 "created_at",
             )
@@ -457,8 +447,9 @@ def completed_rides(request):
 
 
 @api_view(["GET"])
-def cancelled_rides(request):
-    rides = get_cancelled_rides()
+@permission_classes([IsAuthenticated])
+def completed_rides(request):
+    rides = get_completed_rides(request.user)
 
     return Response({
         "success": True,
@@ -467,11 +458,37 @@ def cancelled_rides(request):
             rides.values(
                 "id",
                 "status__code",
+                "driver__id",
+                "driver__user__username",
+                "vehicle__registration_number",
+                "fare",
                 "created_at",
+                "completed_at",
             )
         ),
     })
 
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def cancelled_rides(request):
+    rides = get_cancelled_rides(request.user)
+
+    return Response({
+        "success": True,
+        "count": rides.count(),
+        "data": list(
+            rides.values(
+                "id",
+                "status__code",
+                "driver__id",
+                "driver__user__username",
+                "vehicle__registration_number",
+                "fare",
+                "created_at",
+            )
+        ),
+    })
 
 @api_view(["GET"])
 def driver_ride_history(request):
@@ -521,35 +538,44 @@ def total_fare_earned(request):
     })    
 @api_view(["GET"])
 def ride_aggregations(request):
-    total_rides = Ride.objects.count()
-
-    completed_rides = Ride.objects.filter(
-        status__code="COMPLETED"
-    ).count()
-
-    cancelled_rides = Ride.objects.filter(
-        status__code="CANCELLED"
-    ).count()
-
-    fare_data = Ride.objects.filter(
-        status__code="COMPLETED"
-    ).aggregate(
-        average_fare=Avg("fare"),
-        maximum_fare=Max("fare"),
-        minimum_fare=Min("fare"),
-        total_fare=Sum("fare"),
+    data = Ride.objects.aggregate(
+        total_rides=Count("id"),
+        completed_rides=Count(
+            "id",
+            filter=Q(status__code="COMPLETED")
+        ),
+        cancelled_rides=Count(
+            "id",
+            filter=Q(status__code="CANCELLED")
+        ),
+        total_driver_earnings=Sum(
+            "fare",
+            filter=Q(status__code="COMPLETED")
+        ),
+        average_fare=Avg(
+            "fare",
+            filter=Q(status__code="COMPLETED")
+        ),
+        maximum_fare=Max(
+            "fare",
+            filter=Q(status__code="COMPLETED")
+        ),
+        minimum_fare=Min(
+            "fare",
+            filter=Q(status__code="COMPLETED")
+        ),
     )
 
     return Response({
         "success": True,
         "data": {
-            "total_rides": total_rides,
-            "completed_rides": completed_rides,
-            "cancelled_rides": cancelled_rides,
-            "average_fare": fare_data["average_fare"],
-            "maximum_fare": fare_data["maximum_fare"],
-            "minimum_fare": fare_data["minimum_fare"],
-            "total_driver_earnings": fare_data["total_fare"],
+            "total_rides": data["total_rides"],
+            "completed_rides": data["completed_rides"],
+            "cancelled_rides": data["cancelled_rides"],
+            "average_fare": data["average_fare"],
+            "maximum_fare": data["maximum_fare"],
+            "minimum_fare": data["minimum_fare"],
+            "total_driver_earnings": data["total_driver_earnings"],
         }
     })
 @api_view(["GET"])
@@ -731,3 +757,162 @@ class NotificationReadAllView(APIView):
             "message": "All notifications marked as read.",
             "updated_count": updated
         })
+# 1. filter()
+def filter_rides():
+    return Ride.objects.filter(
+        status__code="COMPLETED"
+    )
+
+
+# 2. exclude()
+def exclude_cancelled_rides():
+    return Ride.objects.exclude(
+        status__code="CANCELLED"
+    )
+
+
+# 3. Q()
+def search_rides():
+    return Ride.objects.filter(
+        Q(status__code="COMPLETED") |
+        Q(status__code="STARTED")
+    )
+
+
+# 4. F()
+def rides_fare_check():
+    return Ride.objects.filter(
+        fare__gt=F("fare")
+    )
+
+
+# 5. annotate()
+def rides_with_driver_count():
+    return Ride.objects.annotate(
+        related_ride_count=Count("driver__rides")
+    )
+
+
+# 6. aggregate()
+def ride_fare_statistics():
+    return Ride.objects.aggregate(
+        total_fare=Sum("fare"),
+        average_fare=Avg("fare"),
+        maximum_fare=Max("fare"),
+        minimum_fare=Min("fare"),
+    )
+
+
+# 7. values()
+def ride_values():
+    return Ride.objects.values(
+        "id",
+        "passenger_id",
+        "driver_id",
+        "status__code",
+        "fare",
+        "created_at",
+    )
+
+
+# 8. values_list()
+def ride_ids():
+    return Ride.objects.values_list(
+        "id",
+        flat=True
+    )
+
+
+# 9. exists()
+def has_completed_rides():
+    return Ride.objects.filter(
+        status__code="COMPLETED"
+    ).exists()
+
+
+# 10. distinct()
+def distinct_drivers():
+    return Ride.objects.filter(
+        driver__isnull=False
+    ).values(
+        "driver_id"
+    ).distinct()
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def advanced_queryset_examples(request):
+    from .services.advanced_queries import (
+        filter_rides,
+        exclude_cancelled_rides,
+        search_rides,
+        rides_updated_after_created,
+        rides_with_driver_count,
+        ride_fare_statistics,
+        ride_values,
+        ride_ids,
+        has_completed_rides,
+        distinct_drivers,
+    )
+
+    return Response({
+        "success": True,
+
+        "filter_count": filter_rides().count(),
+
+        "exclude_cancelled_count":
+            exclude_cancelled_rides().count(),
+
+        "q_count":
+            search_rides().count(),
+
+        "f_count":
+            rides_updated_after_created().count(),
+
+        "annotate_count":
+            rides_with_driver_count().count(),
+
+        "aggregate":
+            ride_fare_statistics(),
+
+        "values":
+            list(ride_values()[:10]),
+
+        "values_list":
+            [str(ride_id) for ride_id in ride_ids()[:10]],
+
+        "exists":
+            has_completed_rides(),
+
+        "distinct_driver_count":
+            distinct_drivers().count(),
+    })    
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def ride_history(request):
+    rides = get_ride_history(
+        request.user,
+        request.query_params
+    )
+
+    return Response({
+        "success": True,
+        "count": rides.count(),
+        "filters": {
+            "date": request.query_params.get("date"),
+            "status": request.query_params.get("status"),
+            "driver": request.query_params.get("driver"),
+            "min_fare": request.query_params.get("min_fare"),
+            "max_fare": request.query_params.get("max_fare"),
+        },
+        "data": list(
+            rides.values(
+                "id",
+                "status__code",
+                "driver__id",
+                "driver__user__username",
+                "vehicle__registration_number",
+                "fare",
+                "created_at",
+                "completed_at",
+            )
+        ),
+    })

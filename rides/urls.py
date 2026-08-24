@@ -24,6 +24,11 @@ from .views import (
        NotificationListView,
     NotificationReadView,
     NotificationReadAllView,
+    advanced_queryset_examples,
+    ride_history,
+    active_rides,
+    completed_rides,
+    cancelled_rides,
 
 )
 
@@ -151,5 +156,13 @@ path(
     NotificationReadAllView.as_view(),
     name="notifications-read-all",
 ),
-
+path(
+    "advanced-querysets/",
+    advanced_queryset_examples,
+    name="advanced-querysets"
+),
+ path("rides/history/", ride_history, name="ride-history"),
+path("rides/active/", active_rides, name="active-rides"),
+path("rides/completed/", completed_rides, name="completed-rides"),
+path("rides/cancelled/", cancelled_rides, name="cancelled-rides"),
 ]
