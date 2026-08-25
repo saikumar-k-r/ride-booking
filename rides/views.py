@@ -618,42 +618,58 @@ def slow_rides(request):
         "data": data,
     })
 class DriverLocationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            driver = DriverProfile.objects.get(user=request.user)
+            driver = DriverProfile.objects.get(
+                user=request.user,
+                is_active=True
+            )
         except DriverProfile.DoesNotExist:
             return Response(
-                {"error": "Driver profile not found."},
+                {"error": "Active driver profile not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = DriverLocationSerializer(data=request.data)
+        serializer = DriverLocationSerializer(
+            data=request.data
+        )
 
-        if serializer.is_valid():
-            location = Location.objects.filter(
-                driver=driver
-            ).order_by("-last_updated").first()
-
-            if location:
-                location.latitude = serializer.validated_data["latitude"]
-                location.longitude = serializer.validated_data["longitude"]
-                location.save()
-            else:
-                location = Location.objects.create(
-                    driver=driver,
-                    latitude=serializer.validated_data["latitude"],
-                    longitude=serializer.validated_data["longitude"]
-                )
-
+        if not serializer.is_valid():
             return Response(
-                DriverLocationSerializer(location).data,
-                status=status.HTTP_200_OK
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        location = (
+            Location.objects
+            .filter(driver=driver)
+            .order_by("-last_updated")
+            .first()
+        )
+
+        if location:
+            location.latitude = serializer.validated_data["latitude"]
+            location.longitude = serializer.validated_data["longitude"]
+
+            # Driver sending location means driver is available
+            location.is_available = True
+            location.availability_status = "ONLINE"
+
+            location.save()
+        else:
+            location = Location.objects.create(
+                driver=driver,
+                latitude=serializer.validated_data["latitude"],
+                longitude=serializer.validated_data["longitude"],
+                is_available=True,
+                availability_status="ONLINE",
             )
 
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            DriverLocationSerializer(location).data,
+            status=status.HTTP_200_OK
         )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -679,6 +695,23 @@ def nearby_drivers(request):
             {"error": "latitude, longitude and radius must be numbers."},
             status=status.HTTP_400_BAD_REQUEST
         )
+    if latitude < -90 or latitude > 90:
+      return Response(
+        {"error": "Invalid latitude. Must be between -90 and 90."},
+        status=status.HTTP_400_BAD_REQUEST
+    )
+
+    if longitude < -180 or longitude > 180:
+      return Response(
+        {"error": "Invalid longitude. Must be between -180 and 180."},
+        status=status.HTTP_400_BAD_REQUEST
+    )
+
+    if radius <= 0:
+      return Response(
+        {"error": "Invalid radius. Must be greater than 0."},
+        status=status.HTTP_400_BAD_REQUEST
+    )
     cache_key = f"nearby_drivers:{latitude}:{longitude}:{radius}"
 
     cached_drivers = cache.get(cache_key)
