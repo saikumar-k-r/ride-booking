@@ -263,7 +263,7 @@ class Notification(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="notifications"
+        related_name="ride_notifications"
     )
 
     title = models.CharField(
