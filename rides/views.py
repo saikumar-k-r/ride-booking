@@ -138,7 +138,7 @@ class VehicleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method in ["PATCH", "DELETE"]:
             return [IsDriverUser()]
-        return [IsAuthenticated()]       
+        return [IsAuthenticated()]
 # =========================
 # RIDE APIs
 # =========================
@@ -148,11 +148,11 @@ class RideListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = RideSerializer
 
     def get_permissions(self):
-        return [IsAuthenticated()]    
+        return [IsAuthenticated()]
 class RideDetailAPIView(generics.RetrieveAPIView):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
 class RideStatusAPIView(generics.UpdateAPIView):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
@@ -191,6 +191,7 @@ class RideStatusAPIView(generics.UpdateAPIView):
 
         ride.status = new_status_obj
         ride.save()
+        invalidate_ride_caches()
 
         channel_layer = get_channel_layer()
 
@@ -263,7 +264,7 @@ class RideCancelAPIView(APIView):
         return Response(
             RideSerializer(ride).data,
             status=status.HTTP_200_OK
-        )    
+        )
 class RideFareAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -293,7 +294,7 @@ class RideFareAPIView(APIView):
                 "total": fare["total"],
             },
             status=status.HTTP_200_OK
-        )    
+        )
 User = get_user_model()
 
 
@@ -329,7 +330,7 @@ class RegisterAPIView(APIView):
                 "email": user.email,
             },
             status=status.HTTP_201_CREATED
-        )    
+        )
 @api_view(["POST"])
 def arrive_ride(request, pk):
     try:
@@ -506,28 +507,50 @@ def driver_ride_history(request):
             )
         ),
     })
-
+def invalidate_ride_caches():
+    cache.delete("rides:daily_count")
+    cache.delete("rides:total_completed")
+    cache.delete("rides:aggregations")
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def daily_ride_count(request):
-    data = get_daily_ride_count()
+    cache_key = "rides:daily_count"
+
+    data = cache.get(cache_key)
+
+    if data is None:
+        data = list(get_daily_ride_count())
+        cache.set(cache_key, data, timeout=300)
 
     return Response({
         "success": True,
-        "data": list(data),
+        "data": data,
     })
 
-
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def total_completed_rides(request):
+    cache_key = "rides:total_completed"
+
+    cached_total = cache.get(cache_key)
+
+    if cached_total is not None:
+        return Response({
+            "success": True,
+            "total_completed_rides": cached_total,
+            "cache": "HIT",
+        })
+
     total = get_total_completed_rides()
+
+    cache.set(cache_key, total, 300)
 
     return Response({
         "success": True,
         "total_completed_rides": total,
+        "cache": "MISS",
     })
-
-
 @api_view(["GET"])
 def total_fare_earned(request):
     result = get_total_fare_earned(request.user)
@@ -535,48 +558,48 @@ def total_fare_earned(request):
     return Response({
         "success": True,
         "data": result,
-    })    
+    })
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def ride_aggregations(request):
-    data = Ride.objects.aggregate(
-        total_rides=Count("id"),
-        completed_rides=Count(
-            "id",
-            filter=Q(status__code="COMPLETED")
-        ),
-        cancelled_rides=Count(
-            "id",
-            filter=Q(status__code="CANCELLED")
-        ),
-        total_driver_earnings=Sum(
-            "fare",
-            filter=Q(status__code="COMPLETED")
-        ),
-        average_fare=Avg(
-            "fare",
-            filter=Q(status__code="COMPLETED")
-        ),
-        maximum_fare=Max(
-            "fare",
-            filter=Q(status__code="COMPLETED")
-        ),
-        minimum_fare=Min(
-            "fare",
-            filter=Q(status__code="COMPLETED")
-        ),
-    )
+    cache_key = "rides:aggregations"
+
+    data = cache.get(cache_key)
+
+    if data is None:
+        data = Ride.objects.aggregate(
+            total_rides=Count("id"),
+            completed_rides=Count(
+                "id",
+                filter=Q(status__code="COMPLETED")
+            ),
+            cancelled_rides=Count(
+                "id",
+                filter=Q(status__code="CANCELLED")
+            ),
+            total_driver_earnings=Sum(
+                "fare",
+                filter=Q(status__code="COMPLETED")
+            ),
+            average_fare=Avg(
+                "fare",
+                filter=Q(status__code="COMPLETED")
+            ),
+            maximum_fare=Max(
+                "fare",
+                filter=Q(status__code="COMPLETED")
+            ),
+            minimum_fare=Min(
+                "fare",
+                filter=Q(status__code="COMPLETED")
+            ),
+        )
+
+        cache.set(cache_key, data, timeout=300)
 
     return Response({
         "success": True,
-        "data": {
-            "total_rides": data["total_rides"],
-            "completed_rides": data["completed_rides"],
-            "cancelled_rides": data["cancelled_rides"],
-            "average_fare": data["average_fare"],
-            "maximum_fare": data["maximum_fare"],
-            "minimum_fare": data["minimum_fare"],
-            "total_driver_earnings": data["total_driver_earnings"],
-        }
+        "data": data,
     })
 @api_view(["GET"])
 def optimized_rides(request):
@@ -730,7 +753,7 @@ def nearby_drivers(request):
     return Response(
         drivers,
         status=status.HTTP_200_OK
-    )    
+    )
 class NotificationPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = "page_size"
@@ -917,7 +940,7 @@ def advanced_queryset_examples(request):
 
         "distinct_driver_count":
             distinct_drivers().count(),
-    })    
+    })
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def ride_history(request):

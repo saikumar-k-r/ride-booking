@@ -29,6 +29,7 @@ from .views import (
     active_rides,
     completed_rides,
     cancelled_rides,
+    total_completed_rides,
 
 )
 
@@ -165,4 +166,9 @@ path(
 path("rides/active/", active_rides, name="active-rides"),
 path("rides/completed/", completed_rides, name="completed-rides"),
 path("rides/cancelled/", cancelled_rides, name="cancelled-rides"),
+path(
+        "total-completed-rides/",
+        total_completed_rides,
+        name="total-completed-rides"
+    ),
 ]
