@@ -60,16 +60,16 @@ urlpatterns = [
 
     # JWT Authentication
     path(
-        "token/",
-        TokenObtainPairView.as_view(),
-        name="token_obtain_pair",
-    ),
+    "auth/token/",
+    TokenObtainPairView.as_view(),
+    name="token_obtain_pair",
+),
 
-    path(
-        "token/refresh/",
-        TokenRefreshView.as_view(),
-        name="token_refresh",
-    ),
+path(
+    "auth/token/refresh/",
+    TokenRefreshView.as_view(),
+    name="token_refresh",
+),
     path(
         "rides/",
          RideListCreateAPIView.as_view(),
@@ -101,10 +101,10 @@ urlpatterns = [
         name="ride-fare",
     ),
    path(
-        "register/",
-        RegisterAPIView.as_view(),
-        name="register",
-    ),
+    "auth/register/",
+    RegisterAPIView.as_view(),
+    name="register",
+),
 
     path(
     "rides/<uuid:pk>/start/",

@@ -1,6 +1,9 @@
 from celery import shared_task
-from .models import Notification
+from django.contrib.auth import get_user_model
 
+from rides.services.notification_service import create_notification
+
+User = get_user_model()
 
 @shared_task
 def send_reminder_notification(user_id, message):
@@ -12,20 +15,28 @@ def send_reminder_notification(user_id, message):
     bind=True,
     autoretry_for=(Exception,),
     retry_backoff=True,
-    max_retries=3
+    max_retries=3,
 )
-def send_notification(self, user_id, title, message, event_id=None):
-    notification, created = Notification.objects.get_or_create(
+def send_notification(
+    self,
+    user_id,
+    title,
+    message,
+    event_id=None,
+):
+    user = User.objects.get(id=user_id)
+
+    notification, created = create_notification(
+        user=user,
+        title=title,
+        message=message,
+        notification_type="RIDE",
         event_id=event_id,
-        defaults={
-            "user_id": user_id,
-            "title": title,
-            "message": message,
-        }
     )
 
     print(
-        f"Notification {'created' if created else 'already exists'} "
+        f"Notification "
+        f"{'created' if created else 'already exists'} "
         f"for event {event_id}"
     )
 

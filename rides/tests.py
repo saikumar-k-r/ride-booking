@@ -7,7 +7,7 @@ from .services.ride_service import accept_ride
 
 from .models import Location, RideStatus, DriverProfile,Ride
 from .services.fare_service import calculate_fare
-
+from django.urls import reverse
 
 class FareCalculationTest(TestCase):
 
@@ -53,20 +53,21 @@ class RideCreationTest(TestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_ride_creation(self):
-        response = self.client.post(
-            "/api/rides/",
-            {
-                "passenger": self.user.id,
-                "pickup_location": self.pickup.id,
-                "drop_location": self.drop.id,
-                "status": self.requested_status.id,
-            },
-            format="json",
-        )
+     response = self.client.post(
+        reverse("ride-list-create"),
+        {
+            "passenger": self.user.id,
+            "pickup_location": self.pickup.id,
+            "drop_location": self.drop.id,
+            "status": self.requested_status.id,
+        },
+        format="json",
+    )
 
-        self.assertEqual(response.status_code, 201)        
+     print("STATUS:", response.status_code)
+     print("CONTENT:", response.content)
 
-
+     self.assertEqual(response.status_code, 201)
 class RideAcceptanceTest(TestCase):
 
     def setUp(self):

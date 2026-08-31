@@ -8,7 +8,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth import get_user_model
 
 from .models import Ride, Location
-
+from .services.driver_service import update_driver_location
 
 User = get_user_model()
 
@@ -178,10 +178,13 @@ class RideConsumer(AsyncWebsocketConsumer):
 
                 return
 
-            location = await self.update_driver_location(
-                latitude,
-                longitude
-            )
+            driver = await self.get_driver_profile()
+
+            location = await update_driver_location(
+              driver=driver,
+              latitude=latitude,
+              longitude=longitude,
+           )
 
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -309,55 +312,13 @@ class RideConsumer(AsyncWebsocketConsumer):
     # =====================================================
     # DRIVER LOCATION
     # =====================================================
+@database_sync_to_async
+def get_driver_profile(self):
+    if not hasattr(self.user, "driver_profile"):
+        raise ValueError("User is not a driver.")
 
-    @database_sync_to_async
-    def update_driver_location(
-        self,
-        latitude,
-        longitude
-    ):
+    return self.user.driver_profile
 
-        ride = Ride.objects.select_related(
-            "driver"
-        ).get(
-            id=self.ride_id
-        )
-
-        driver_profile = ride.driver
-
-        location = Location.objects.filter(
-            driver=driver_profile
-        ).first()
-
-        if location is None:
-
-            location = Location.objects.create(
-                driver=driver_profile,
-                address="",
-                latitude=latitude,
-                longitude=longitude,
-                is_available=True,
-                availability_status="AVAILABLE"
-            )
-
-        else:
-
-            location.latitude = latitude
-            location.longitude = longitude
-            location.is_available = True
-            location.availability_status = "AVAILABLE"
-
-            location.save(
-                update_fields=[
-                    "latitude",
-                    "longitude",
-                    "is_available",
-                    "availability_status",
-                    "last_updated"
-                ]
-            )
-
-        return location
 
     # =====================================================
     # RECEIVE LOCATION BROADCAST

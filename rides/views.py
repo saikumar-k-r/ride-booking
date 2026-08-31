@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from .services.fare_service import calculate_fare
-from .services.ride_service import accept_ride
+from .services.ride_service import accept_ride,update_ride_status
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.decorators import action
@@ -13,6 +13,8 @@ from rest_framework import viewsets
 from django.db import connection
 from django.db.models import Q, F, Count, Sum, Avg, Min, Max
 from rides.models import Ride
+from django.core.cache import cache
+from .utils.helpers import success_response, error_response
 
 from .serializers import DriverLocationSerializer
 from rides.services.location_service import find_nearby_drivers
@@ -21,7 +23,7 @@ from channels.layers import get_channel_layer
 from rest_framework.pagination import PageNumberPagination
 from .models import Notification
 from .serializers import NotificationSerializer
-from django.core.cache import cache
+
 
 from .permissions import IsAdminUserRole, IsDriverUser
 from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
@@ -153,64 +155,44 @@ class RideDetailAPIView(generics.RetrieveAPIView):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
     permission_classes = [IsAuthenticated]
-class RideStatusAPIView(generics.UpdateAPIView):
-    queryset = Ride.objects.all()
-    serializer_class = RideSerializer
+class RideStatusAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def update(self, request, *args, **kwargs):
-        ride = self.get_object()
-
-        current_status = ride.status.code
+        ride_id = kwargs.get("pk")
         new_status = request.data.get("status")
 
-        allowed_transitions = {
-            "REQUESTED": ["ACCEPTED", "CANCELLED"],
-            "ACCEPTED": ["DRIVER_ARRIVING", "CANCELLED"],
-            "DRIVER_ARRIVING": ["STARTED"],
-            "STARTED": ["COMPLETED"],
-            "COMPLETED": [],
-            "CANCELLED": [],
-        }
-
-        if new_status not in allowed_transitions.get(current_status, []):
-            return Response(
-                {
-                    "error": f"Invalid transition: {current_status} → {new_status}"
-                },
-                status=400,
-            )
+        if not new_status:
+            return error_response(
+            message="Ride not found.",
+            error_code="RIDE_NOT_FOUND",
+            status_code=status.HTTP_404_NOT_FOUND
+           )
 
         try:
-            new_status_obj = RideStatus.objects.get(code=new_status)
-        except RideStatus.DoesNotExist:
-            return Response(
-                {"error": "Invalid ride status."},
-                status=400,
+            ride = update_ride_status(
+                ride_id=ride_id,
+                new_status=new_status,
             )
 
-        ride.status = new_status_obj
-        ride.save()
-        invalidate_ride_caches()
+        except Ride.DoesNotExist:
+            return error_response(
+            message="Ride not found.",
+            error_code="RIDE_NOT_FOUND",
+            status_code=status.HTTP_404_NOT_FOUND
+           )
 
-        channel_layer = get_channel_layer()
+        except ValueError as exc:
+            return error_response(
+            message="Ride not found.",
+            error_code="RIDE_NOT_FOUND",
+            status_code=status.HTTP_404_NOT_FOUND
+)
 
-        async_to_sync(channel_layer.group_send)(
-          f"ride_{ride.id}",
-          {
-            "type": "ride_update",
-            "data": {
-            "ride_id": str(ride.id),
-            "status": new_status_obj.code,
-            "message": f"Ride status changed to {new_status_obj.name}",
-          },
-        },
-       )
-
-        return Response(
-          RideSerializer(ride).data,
-          status=200
-       )
+        return success_response(
+          data=RideSerializer(ride).data,
+          message="Ride status updated successfully",
+        )
 class RideAcceptAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -219,21 +201,22 @@ class RideAcceptAPIView(APIView):
             ride = accept_ride(pk, request.user)
 
         except Ride.DoesNotExist:
-            return Response(
-                {"detail": "Ride not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return error_response(
+             message="Ride not found.",
+             error_code="RIDE_NOT_FOUND",
+             status_code=status.HTTP_404_NOT_FOUND
+           )
 
         except ValueError as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        return Response(
-            RideSerializer(ride).data,
-            status=status.HTTP_200_OK
-        )
+            return error_response(
+             message="Ride not found.",
+             error_code="RIDE_NOT_FOUND",
+             status_code=status.HTTP_404_NOT_FOUND
+           )
+        return success_response(
+           data=RideSerializer(ride).data,
+           message="Ride accepted successfully."
+         )
 class RideCancelAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -241,19 +224,19 @@ class RideCancelAPIView(APIView):
         try:
             ride = Ride.objects.get(id=pk)
         except Ride.DoesNotExist:
-            return Response(
-                {"detail": "Ride not found."},
-                status=status.HTTP_404_NOT_FOUND
+            return error_response(
+             message="Ride not found.",
+             error_code="RIDE_NOT_FOUND",
+             status_code=status.HTTP_404_NOT_FOUND
             )
 
         current_status = ride.status.code
 
         if current_status not in ["REQUESTED", "ACCEPTED"]:
-            return Response(
-                {
-                    "detail": f"Ride cannot be cancelled from {current_status} status."
-                },
-                status=status.HTTP_400_BAD_REQUEST
+            return error_response(
+               message="Ride not found.",
+               error_code="RIDE_NOT_FOUND",
+               status_code=status.HTTP_404_NOT_FOUND
             )
 
         cancelled_status = RideStatus.objects.get(code="CANCELLED")
@@ -261,9 +244,9 @@ class RideCancelAPIView(APIView):
         ride.status = cancelled_status
         ride.save()
 
-        return Response(
-            RideSerializer(ride).data,
-            status=status.HTTP_200_OK
+        return success_response(
+           data=RideSerializer(ride).data,
+           message="Ride accepted successfully."
         )
 class RideFareAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -278,23 +261,24 @@ class RideFareAPIView(APIView):
             time = float(time)
             surge = float(surge)
         except (TypeError, ValueError):
-            return Response(
-                {"detail": "distance, time and surge must be numbers."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return error_response(
+    message="Username and password are required.",
+    error_code="CREDENTIALS_REQUIRED",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
 
         fare = calculate_fare(distance, time, surge)
 
-        return Response(
-            {
-                "base_fare": fare["base_fare"],
-                "distance_fare": fare["distance_fare"],
-                "time_fare": fare["time_fare"],
-                "surge": fare["surge"],
-                "total": fare["total"],
-            },
-            status=status.HTTP_200_OK
-        )
+        return success_response(
+    data={
+        "base_fare": fare["base_fare"],
+        "distance_fare": fare["distance_fare"],
+        "time_fare": fare["time_fare"],
+        "surge": fare["surge"],
+        "total": fare["total"],
+    },
+    message="Fare calculated successfully."
+   )
 User = get_user_model()
 
 
@@ -306,83 +290,93 @@ class RegisterAPIView(APIView):
         email = request.data.get("email", "")
 
         if not username or not password:
-            return Response(
-                {"detail": "username and password are required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return error_response(
+    message="Username and password are required.",
+    error_code="CREDENTIALS_REQUIRED",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
 
         if User.objects.filter(username=username).exists():
-            return Response(
-                {"detail": "Username already exists."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return error_response(
+    message="Username and password are required.",
+    error_code="CREDENTIALS_REQUIRED",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password
         )
 
-        return Response(
-            {
-                "id": str(user.pk),
-                "username": user.username,
-                "email": user.email,
-            },
-            status=status.HTTP_201_CREATED
-        )
+        return success_response(
+    data={
+        "id": str(user.pk),
+        "username": user.username,
+        "email": user.email,
+    },
+    message="User registered successfully.",
+    status_code=status.HTTP_201_CREATED,
+)
 @api_view(["POST"])
 def arrive_ride(request, pk):
     try:
         ride = Ride.objects.get(pk=pk)
     except Ride.DoesNotExist:
-        return Response(
-            {"detail": "Ride not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return error_response(
+    message="Ride not found.",
+    error_code="RIDE_NOT_FOUND",
+    status_code=status.HTTP_404_NOT_FOUND,
+)
 
     try:
         arrived_status = RideStatus.objects.get(name="ARRIVED")
     except RideStatus.DoesNotExist:
-        return Response(
-            {"detail": "ARRIVED status does not exist."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return error_response(
+    message="ARRIVED status does not exist.",
+    error_code="ARRIVED_STATUS_NOT_FOUND",
+    status_code=status.HTTP_400_BAD_REQUEST,
+)
 
     ride.status = arrived_status
     ride.save(update_fields=["status"])
 
-    return Response({
+    return success_response(
+    data={
         "id": str(ride.id),
         "status": arrived_status.name,
-    })
+    },
+    message="Ride marked as arrived successfully.",
+)
 @api_view(["POST"])
 def complete_ride(request, pk):
     try:
         ride = Ride.objects.get(pk=pk)
     except Ride.DoesNotExist:
-        return Response(
-            {"detail": "Ride not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+        return error_response(
+    message="Ride not found.",
+    error_code="RIDE_NOT_FOUND",
+    status_code=status.HTTP_404_NOT_FOUND,
+)
 
     try:
         completed_status = RideStatus.objects.get(name="COMPLETED")
     except RideStatus.DoesNotExist:
-        return Response(
-            {"detail": "COMPLETED status does not exist."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return error_response(
+    message="COMPLETED status does not exist.",
+    error_code="COMPLETED_STATUS_NOT_FOUND",
+    status_code=status.HTTP_400_BAD_REQUEST,
+)
 
     ride.status = completed_status
     ride.save(update_fields=["status"])
 
-    return Response(
-        {
-            "id": str(ride.id),
-            "status": completed_status.name,
-        }
-    )
+    return success_response(
+    data={
+        "id": str(ride.id),
+        "status": completed_status.name,
+    },
+    message="Ride completed successfully.",
+)
 class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="start")
@@ -390,15 +384,11 @@ class RideViewSet(viewsets.ModelViewSet):
         ride = get_object_or_404(Ride, pk=pk)
 
         if ride.status.code != "ACCEPTED":
-            return Response(
-                {
-                    "success": False,
-                    "message": "Ride must be accepted before starting",
-                    "error_code": "INVALID_RIDE_STATUS",
-                    "data": None,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return error_response(
+    message="Ride must be accepted before starting.",
+    error_code="INVALID_RIDE_STATUS",
+    status_code=status.HTTP_400_BAD_REQUEST,
+)
 
         started_status = get_object_or_404(
             RideStatus,
@@ -409,18 +399,13 @@ class RideViewSet(viewsets.ModelViewSet):
         ride.status = started_status
         ride.save(update_fields=["status", "updated_at"])
 
-        return Response(
-            {
-                "success": True,
-                "message": "Ride started successfully",
-                "error_code": None,
-                "data": {
-                    "id": str(ride.id),
-                    "status": ride.status.code,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
+        return success_response(
+    data={
+        "id": str(ride.id),
+        "status": ride.status.code,
+    },
+    message="Ride started successfully.",
+)
 # ============================================================
 # ADVANCED ORM APIs
 # ============================================================
@@ -430,21 +415,20 @@ class RideViewSet(viewsets.ModelViewSet):
 def active_rides(request):
     rides = get_active_rides(request.user)
 
-    return Response({
-        "success": True,
-        "count": rides.count(),
-        "data": list(
-            rides.values(
-                "id",
-                "status__code",
-                "driver__id",
-                "driver__user__username",
-                "vehicle__registration_number",
-                "fare",
-                "created_at",
-            )
-        ),
-    })
+    return success_response(
+    data=list(
+        rides.values(
+            "id",
+            "status__code",
+            "driver__id",
+            "driver__user__username",
+            "vehicle__registration_number",
+            "fare",
+            "created_at",
+        )
+    ),
+    message="Active rides retrieved successfully.",
+)
 
 
 @api_view(["GET"])
@@ -452,22 +436,21 @@ def active_rides(request):
 def completed_rides(request):
     rides = get_completed_rides(request.user)
 
-    return Response({
-        "success": True,
-        "count": rides.count(),
-        "data": list(
-            rides.values(
-                "id",
-                "status__code",
-                "driver__id",
-                "driver__user__username",
-                "vehicle__registration_number",
-                "fare",
-                "created_at",
-                "completed_at",
-            )
-        ),
-    })
+    return success_response(
+    data=list(
+        rides.values(
+            "id",
+            "status__code",
+            "driver__id",
+            "driver__user__username",
+            "vehicle__registration_number",
+            "fare",
+            "created_at",
+            "completed_at",
+        )
+    ),
+    message="Completed rides retrieved successfully.",
+)
 
 
 @api_view(["GET"])
@@ -475,42 +458,35 @@ def completed_rides(request):
 def cancelled_rides(request):
     rides = get_cancelled_rides(request.user)
 
-    return Response({
-        "success": True,
-        "count": rides.count(),
-        "data": list(
-            rides.values(
-                "id",
-                "status__code",
-                "driver__id",
-                "driver__user__username",
-                "vehicle__registration_number",
-                "fare",
-                "created_at",
-            )
-        ),
-    })
+    return success_response(
+    data=list(
+        rides.values(
+            "id",
+            "status__code",
+            "driver__id",
+            "driver__user__username",
+            "vehicle__registration_number",
+            "fare",
+            "created_at",
+        )
+    ),
+    message="Cancelled rides retrieved successfully.",
+)
 
 @api_view(["GET"])
 def driver_ride_history(request):
     rides = get_driver_ride_history(request.user)
-
-    return Response({
-        "success": True,
-        "count": rides.count(),
-        "data": list(
-            rides.values(
-                "id",
-                "status__code",
-                "fare",
-                "created_at",
-            )
-        ),
-    })
-def invalidate_ride_caches():
-    cache.delete("rides:daily_count")
-    cache.delete("rides:total_completed")
-    cache.delete("rides:aggregations")
+    return success_response(
+    data=list(
+        rides.values(
+            "id",
+            "status__code",
+            "fare",
+            "created_at",
+        )
+    ),
+    message="Driver ride history retrieved successfully.",
+)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -520,13 +496,13 @@ def daily_ride_count(request):
     data = cache.get(cache_key)
 
     if data is None:
-        data = list(get_daily_ride_count())
+        data = get_daily_ride_count()
         cache.set(cache_key, data, timeout=300)
 
-    return Response({
-        "success": True,
-        "data": data,
-    })
+    return success_response(
+    data=data,
+    message="Daily ride count retrieved successfully.",
+)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -536,29 +512,33 @@ def total_completed_rides(request):
     cached_total = cache.get(cache_key)
 
     if cached_total is not None:
-        return Response({
-            "success": True,
-            "total_completed_rides": cached_total,
-            "cache": "HIT",
-        })
+        return success_response(
+    data={
+        "total_completed_rides": cached_total,
+        "cache": "HIT",
+    },
+    message="Total completed rides retrieved successfully.",
+)
 
     total = get_total_completed_rides()
 
     cache.set(cache_key, total, 300)
 
-    return Response({
-        "success": True,
+    return success_response(
+    data={
         "total_completed_rides": total,
         "cache": "MISS",
-    })
+    },
+    message="Total completed rides retrieved successfully.",
+)
 @api_view(["GET"])
 def total_fare_earned(request):
     result = get_total_fare_earned(request.user)
 
-    return Response({
-        "success": True,
-        "data": result,
-    })
+    return success_response(
+    data=result,
+    message="Total fare earned retrieved successfully.",
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def ride_aggregations(request):
@@ -597,10 +577,10 @@ def ride_aggregations(request):
 
         cache.set(cache_key, data, timeout=300)
 
-    return Response({
-        "success": True,
-        "data": data,
-    })
+    return success_response(
+    data=data,
+    message="Ride aggregations retrieved successfully.",
+)
 @api_view(["GET"])
 def optimized_rides(request):
     rides = Ride.objects.select_related(
@@ -617,11 +597,13 @@ def optimized_rides(request):
             "status": ride.status.code if ride.status else None,
         })
 
-    return Response({
-        "success": True,
+    return success_response(
+    data={
         "query_count": len(connection.queries),
-        "data": data,
-    })
+        "aggregations": data,
+    },
+    message="Ride aggregations retrieved successfully.",
+)
 @api_view(["GET"])
 def slow_rides(request):
     rides = Ride.objects.all()
@@ -634,12 +616,13 @@ def slow_rides(request):
             "driver": str(ride.driver) if ride.driver else None,
             "status": ride.status.code if ride.status else None,
         })
-
-    return Response({
-        "success": True,
+    return success_response(
+    data={
         "query_count": len(connection.queries),
-        "data": data,
-    })
+        "rides": data,
+    },
+    message="Slow rides retrieved successfully.",
+)
 class DriverLocationAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -650,20 +633,23 @@ class DriverLocationAPIView(APIView):
                 is_active=True
             )
         except DriverProfile.DoesNotExist:
-            return Response(
-                {"error": "Active driver profile not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return error_response(
+    message="Active driver profile not found.",
+    error_code="DRIVER_NOT_FOUND",
+    status_code=status.HTTP_404_NOT_FOUND
+)
 
         serializer = DriverLocationSerializer(
             data=request.data
         )
 
         if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return error_response(
+    message="Invalid driver location data.",
+    error_code="INVALID_DRIVER_LOCATION",
+    status_code=status.HTTP_400_BAD_REQUEST,
+    data=serializer.errors
+)
 
         location = (
             Location.objects
@@ -690,10 +676,10 @@ class DriverLocationAPIView(APIView):
                 availability_status="ONLINE",
             )
 
-        return Response(
-            DriverLocationSerializer(location).data,
-            status=status.HTTP_200_OK
-        )
+        return success_response(
+    data=DriverLocationSerializer(location).data,
+    message="Driver location updated successfully."
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def nearby_drivers(request):
@@ -702,45 +688,51 @@ def nearby_drivers(request):
     radius = request.query_params.get("radius")
 
     if not latitude or not longitude or not radius:
-        return Response(
-            {
-                "error": "latitude, longitude and radius are required."
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return error_response(
+    message="latitude, longitude and radius are required.",
+    error_code="MISSING_LOCATION_PARAMETERS",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
 
     try:
         latitude = float(latitude)
         longitude = float(longitude)
         radius = float(radius)
     except ValueError:
-        return Response(
-            {"error": "latitude, longitude and radius must be numbers."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return error_response(
+    message="latitude, longitude and radius must be numbers.",
+    error_code="INVALID_LOCATION_PARAMETERS",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
     if latitude < -90 or latitude > 90:
-      return Response(
-        {"error": "Invalid latitude. Must be between -90 and 90."},
-        status=status.HTTP_400_BAD_REQUEST
-    )
+      return error_response(
+    message="Invalid latitude. Must be between -90 and 90.",
+    error_code="INVALID_LATITUDE",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
 
     if longitude < -180 or longitude > 180:
-      return Response(
-        {"error": "Invalid longitude. Must be between -180 and 180."},
-        status=status.HTTP_400_BAD_REQUEST
-    )
+      return error_response(
+    message="Invalid radius. Must be greater than 0.",
+    error_code="INVALID_RADIUS",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
 
     if radius <= 0:
-      return Response(
-        {"error": "Invalid radius. Must be greater than 0."},
-        status=status.HTTP_400_BAD_REQUEST
-    )
+      return error_response(
+    message="Invalid radius. Must be greater than 0.",
+    error_code="INVALID_RADIUS",
+    status_code=status.HTTP_400_BAD_REQUEST
+)
     cache_key = f"nearby_drivers:{latitude}:{longitude}:{radius}"
 
     cached_drivers = cache.get(cache_key)
 
     if cached_drivers is not None:
-       return Response(cached_drivers)
+       return success_response(
+    data=cached_drivers,
+    message="Nearby drivers retrieved successfully."
+)
 
     drivers = find_nearby_drivers(
         latitude,
@@ -750,10 +742,10 @@ def nearby_drivers(request):
     cache.set(cache_key, drivers, timeout=60)
 
 
-    return Response(
-        drivers,
-        status=status.HTTP_200_OK
-    )
+    return success_response(
+    data=drivers,
+    message="Nearby drivers retrieved successfully."
+)
 class NotificationPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = "page_size"
@@ -786,18 +778,18 @@ class NotificationReadView(APIView):
                 user=request.user
             )
         except Notification.DoesNotExist:
-            return Response(
-                {"detail": "Notification not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
+            return error_response(
+    message="Notification not found.",
+    error_code="NOTIFICATION_NOT_FOUND",
+    status_code=status.HTTP_404_NOT_FOUND
+)
         notification.is_read = True
         notification.save(update_fields=["is_read"])
 
-        return Response(
-            NotificationSerializer(notification).data,
-            status=status.HTTP_200_OK
-        )
+        return success_response(
+    data=NotificationSerializer(notification).data,
+    message="Notification marked as read successfully."
+)
 
 
 class NotificationReadAllView(APIView):
@@ -809,10 +801,12 @@ class NotificationReadAllView(APIView):
             is_read=False
         ).update(is_read=True)
 
-        return Response({
-            "message": "All notifications marked as read.",
-            "updated_count": updated
-        })
+        return success_response(
+    data={
+        "updated_count": updated
+    },
+    message="All notifications marked as read."
+)
 # 1. filter()
 def filter_rides():
     return Ride.objects.filter(
@@ -909,9 +903,8 @@ def advanced_queryset_examples(request):
         distinct_drivers,
     )
 
-    return Response({
-        "success": True,
-
+    return success_response(
+    data={
         "filter_count": filter_rides().count(),
 
         "exclude_cancelled_count":
@@ -940,7 +933,9 @@ def advanced_queryset_examples(request):
 
         "distinct_driver_count":
             distinct_drivers().count(),
-    })
+    },
+    message="Advanced queryset examples retrieved successfully."
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def ride_history(request):
@@ -949,8 +944,8 @@ def ride_history(request):
         request.query_params
     )
 
-    return Response({
-        "success": True,
+    return success_response(
+        data={
         "count": rides.count(),
         "filters": {
             "date": request.query_params.get("date"),
