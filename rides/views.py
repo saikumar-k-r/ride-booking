@@ -152,9 +152,11 @@ class RideListCreateAPIView(generics.ListCreateAPIView):
     def get_permissions(self):
         return [IsAuthenticated()]
 class RideDetailAPIView(generics.RetrieveAPIView):
-    queryset = Ride.objects.all()
     serializer_class = RideSerializer
+    queryset=Ride.objects.all()
     permission_classes = [IsAuthenticated]
+
+
 class RideStatusAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
