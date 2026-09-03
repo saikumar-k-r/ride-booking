@@ -30,6 +30,7 @@ from .views import (
     completed_rides,
     cancelled_rides,
     total_completed_rides,
+    vehicle_types,
 
 )
 
@@ -80,6 +81,11 @@ path(
          RideDetailAPIView.as_view(),
          name="ride-detail",
     ),
+    path(
+    "vehicle-types/",
+     vehicle_types,
+    name="vehicle-types",
+),
     path(
         "rides/<uuid:pk>/status/",
          RideStatusAPIView.as_view(),

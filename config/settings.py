@@ -156,8 +156,8 @@ REST_FRAMEWORK = {
     ),
 
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "1/minute",
-        "user": "1/minute",
+        "anon": "100/minute",
+        "user": "100/minute",
     },
 
     "DEFAULT_FILTER_BACKENDS": [
@@ -165,8 +165,8 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
 
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
+    "DEFAULT_PAGINATION_CLASS": "rides.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),

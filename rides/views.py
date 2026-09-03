@@ -82,6 +82,7 @@ class DriverDetailAPIView(generics.RetrieveUpdateAPIView):
         return [IsAuthenticated()]
 
 
+
 # =========================
 # VEHICLE APIs
 # =========================
@@ -146,16 +147,62 @@ class VehicleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 # =========================
 
 class RideListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Ride.objects.all()
     serializer_class = RideSerializer
+
+    def get_queryset(self):
+        return Ride.objects.select_related(
+            "passenger",
+            "driver",
+            "vehicle",
+            "pickup_location",
+            "drop_location",
+            "status",
+        ).all()
 
     def get_permissions(self):
         return [IsAuthenticated()]
 class RideDetailAPIView(generics.RetrieveAPIView):
     serializer_class = RideSerializer
-    queryset=Ride.objects.all()
     permission_classes = [IsAuthenticated]
 
+    queryset = Ride.objects.select_related(
+        "passenger",
+        "driver",
+        "vehicle",
+        "pickup_location",
+        "drop_location",
+        "status",
+    )
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vehicle_types(request):
+    cache_key = "vehicle_types:active"
+
+    data = cache.get(cache_key)
+
+    if data is not None:
+        return success_response(
+            data=data,
+            message="Vehicle types retrieved successfully.",
+        )
+
+    from .models import VehicleType
+
+    data = list(
+        VehicleType.objects.filter(
+            is_active=True
+        ).values(
+            "id",
+            "name",
+        )
+    )
+
+    cache.set(cache_key, data, timeout=600)
+
+    return success_response(
+        data=data,
+        message="Vehicle types retrieved successfully.",
+    )
 
 class RideStatusAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -655,10 +702,11 @@ class DriverLocationAPIView(APIView):
 
         location = (
             Location.objects
-            .filter(driver=driver)
-            .order_by("-last_updated")
-            .first()
-        )
+           .select_related("driver")
+           .filter(driver=driver)
+           .order_by("-last_updated")
+           .first()
+)
 
         if location:
             location.latitude = serializer.validated_data["latitude"]

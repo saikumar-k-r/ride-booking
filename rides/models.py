@@ -59,7 +59,7 @@ class DriverProfile(models.Model):
             models.Index(fields=["is_verified", "is_active"]),
         ]
 
-    def _str_(self):
+    def __str__(self):
         return f"Driver: {self.user.username}"
 class Vehicle(models.Model):
     id = models.UUIDField(
@@ -144,9 +144,10 @@ class Location(models.Model):
     )
 
     class Meta:
-        indexes = [
-            models.Index(fields=["latitude", "longitude"]),
-        ]
+     indexes = [
+        models.Index(fields=["latitude", "longitude"]),
+        models.Index(fields=["is_available", "availability_status"]),
+    ]
 
     def __str__(self):
         return self.address
@@ -238,11 +239,12 @@ class Ride(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-         indexes = [
-            models.Index(fields=["passenger", "status"]),
-            models.Index(fields=["driver", "status"]),
-            models.Index(fields=["status", "created_at"]),
-        ]
+     indexes = [
+        models.Index(fields=["passenger", "status"]),
+        models.Index(fields=["passenger", "-created_at"]),
+        models.Index(fields=["driver", "status"]),
+        models.Index(fields=["status", "created_at"]),
+    ]
     def __str__(self):
         return str(self.id)
 class Notification(models.Model):
