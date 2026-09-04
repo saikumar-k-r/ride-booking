@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+
 from .views import (
     DriverListCreateAPIView,
     DriverDetailAPIView,
@@ -177,4 +178,5 @@ path(
         total_completed_rides,
         name="total-completed-rides"
     ),
+
 ]
