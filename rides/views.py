@@ -16,7 +16,7 @@ from rides.models import Ride
 from django.core.cache import cache
 from .utils.helpers import success_response, error_response
 
-from .serializers import DriverLocationSerializer
+from .serializers import DriverLocationSerializer,RideCreateSerializer
 from rides.services.location_service import find_nearby_drivers
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -148,6 +148,10 @@ class VehicleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class RideListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = RideSerializer
+    def get_serializer_class(self):
+         if self.request.method == "POST":
+            return RideCreateSerializer
+         return RideSerializer
 
     def get_queryset(self):
         return Ride.objects.select_related(
@@ -161,6 +165,7 @@ class RideListCreateAPIView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         return [IsAuthenticated()]
+
 class RideDetailAPIView(generics.RetrieveAPIView):
     serializer_class = RideSerializer
     permission_classes = [IsAuthenticated]
