@@ -15,6 +15,7 @@ from django.db.models import Q, F, Count, Sum, Avg, Min, Max
 from rides.models import Ride
 from django.core.cache import cache
 from .utils.helpers import success_response, error_response
+from rest_framework.throttling import ScopedRateThrottle
 
 from .serializers import DriverLocationSerializer,RideCreateSerializer
 from rides.services.location_service import find_nearby_drivers
@@ -23,7 +24,7 @@ from channels.layers import get_channel_layer
 from rest_framework.pagination import PageNumberPagination
 from .models import Notification
 from .serializers import NotificationSerializer
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .permissions import IsAdminUserRole, IsDriverUser
 from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
@@ -147,6 +148,8 @@ class VehicleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 # =========================
 
 class RideListCreateAPIView(generics.ListCreateAPIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "sensitive"
     serializer_class = RideSerializer
     def get_serializer_class(self):
          if self.request.method == "POST":
@@ -1022,3 +1025,6 @@ def ride_history(request):
             )
         ),
     })
+class LoginTokenView(TokenObtainPairView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
