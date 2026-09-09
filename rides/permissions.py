@@ -74,3 +74,13 @@ class IsDriverOwnerOrAdmin(BasePermission):
             driver = getattr(obj, "driver_profile", None)
 
         return driver is not None and driver.user == request.user
+class IsRideOwnerOrDriverOrAdmin(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+
+        if obj.passenger == request.user:
+            return True
+
+        driver = getattr(obj, "driver", None)
+        return driver is not None and driver.user == request.user

@@ -16,6 +16,7 @@ from rides.models import Ride
 from django.core.cache import cache
 from .utils.helpers import success_response, error_response
 from rest_framework.throttling import ScopedRateThrottle
+from .permissions import IsRideOwnerOrDriverOrAdmin
 
 from .serializers import DriverLocationSerializer,RideCreateSerializer
 from rides.services.location_service import find_nearby_drivers
@@ -171,15 +172,23 @@ class RideListCreateAPIView(generics.ListCreateAPIView):
 
 class RideDetailAPIView(generics.RetrieveAPIView):
     serializer_class = RideSerializer
-    permission_classes = [IsAuthenticated]
-
-    queryset = Ride.objects.select_related(
+    permission_classes = [IsAuthenticated,IsRideOwnerOrDriverOrAdmin]
+    def get_queryset(self):
+     queryset = Ride.objects.select_related(
         "passenger",
         "driver",
         "vehicle",
         "pickup_location",
         "drop_location",
         "status",
+    )
+
+     if self.request.user.is_staff:
+        return queryset
+
+     return queryset.filter(
+        Q(passenger=self.request.user) |
+        Q(driver__user=self.request.user)
     )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

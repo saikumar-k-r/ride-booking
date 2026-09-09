@@ -196,6 +196,25 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Kolkata"
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "remove-expired-records-daily": {
+        "task": "notifications.tasks.clean_expired_data",
+        "schedule": crontab(hour=1, minute=0),
+        "args": (30,),
+    },
+
+    "generate-daily-ride-summary": {
+        "task": "notifications.tasks.generate_ride_report",
+        "schedule": crontab(hour=2, minute=0),
+    },
+
+    "clean-old-temporary-data-daily": {
+        "task": "notifications.tasks.clean_old_temporary_data",
+        "schedule": crontab(hour=3, minute=0),
+    },
+}
 # Redis Cache
 CACHES = {
     "default": {
