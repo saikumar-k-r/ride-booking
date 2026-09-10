@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rides.health import health_check, database_health, redis_health
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/", include("rides.urls")),
@@ -26,4 +27,7 @@ path(
     SpectacularSwaggerView.as_view(url_name="schema"),
     name="swagger-ui",
 ),
+path("api/health/", health_check),
+path("api/health/database/", database_health),
+path("api/health/redis/", redis_health),
 ]

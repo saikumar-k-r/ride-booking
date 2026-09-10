@@ -61,6 +61,7 @@ CHANNEL_LAYERS = {
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'rides.middleware.RequestTrackingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -179,6 +180,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rides.pagination.StandardPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "rides.exception_handler.custom_exception_handler",
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
@@ -256,25 +258,70 @@ LOGGING = {
     },
 
     "loggers": {
-        "django": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "rides": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "notifications": {
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "django.request": {
-            "handlers": ["console", "file"],
-            "level": "ERROR",
-            "propagate": False,
-        },
+    "django": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
     },
+
+    "application": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "authentication": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "api": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "database": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "celery": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "websocket": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "security": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "rides": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "notifications": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": False,
+    },
+
+    "django.request": {
+        "handlers": ["console", "file"],
+        "level": "ERROR",
+        "propagate": False,
+    },
+},
 }

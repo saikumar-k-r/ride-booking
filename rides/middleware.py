@@ -60,3 +60,50 @@ class JWTAuthMiddleware(BaseMiddleware):
             receive,
             send
         )
+import time
+import uuid
+import logging
+
+logger = logging.getLogger("api")
+
+
+class RequestTrackingMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.request_id = request_id
+
+        start_time = time.perf_counter()
+
+        try:
+            response = self.get_response(request)
+            return response
+        except Exception:
+            logger.exception(
+                "API_ERROR request_id=%s method=%s endpoint=%s user_id=%s",
+                request_id,
+                request.method,
+                request.path,
+                getattr(request.user, "id", "anonymous"),
+            )
+            raise
+        finally:
+            duration_ms = round(
+                (time.perf_counter() - start_time) * 1000, 2
+            )
+
+            logger.info(
+                "API_REQUEST request_id=%s method=%s endpoint=%s "
+                "user_id=%s status=%s execution_time_ms=%s",
+                request_id,
+                request.method,
+                request.path,
+                getattr(request.user, "id", "anonymous"),
+                getattr(locals().get("response"), "status_code", 500),
+                duration_ms,
+            )
+
+            if "response" in locals():
+                response["X-Request-ID"] = request_id
