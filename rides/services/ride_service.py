@@ -2,6 +2,7 @@ from django.db import transaction
 from django.core.cache import cache
 from rides.models import Ride, RideStatus, DriverProfile
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 def accept_ride(ride_id, user):
     with transaction.atomic():
         # Lock the ride row so two drivers cannot accept it at the same time
@@ -177,3 +178,19 @@ def complete_ride(ride_id, user):
         cache.delete("rides:aggregations")
 
         return ride
+@transaction.atomic
+def accept_ride(ride_id, driver):
+    ride = Ride.objects.select_for_update().get(id=ride_id)
+
+    if ride.status.name != "REQUESTED":
+        raise ValidationError("Ride is already accepted")
+
+    if ride.driver_id != driver.id:
+        raise ValidationError("You are not assigned to this ride")
+
+    accepted_status = RideStatus.objects.get(name="ACCEPTED")
+
+    ride.status = accepted_status
+    ride.save(update_fields=["status"])
+
+    return ride

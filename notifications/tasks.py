@@ -46,7 +46,34 @@ def send_notification(
     )
 
     return True
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=3,
+)
+def send_ride_completion_notification(
+    self,
+    user_id,
+    ride_id,
+):
+    user = User.objects.get(id=user_id)
 
+    notification, created = create_notification(
+        user=user,
+        title="Ride Completed",
+        message=f"Your ride {ride_id} has been completed.",
+        notification_type="RIDE",
+        event_id=str(ride_id),
+    )
+
+    print(
+        f"Ride completion notification "
+        f"{'created' if created else 'already exists'} "
+        f"for ride {ride_id}"
+    )
+
+    return True
 
 @shared_task
 def generate_ride_report(user_id=None):
