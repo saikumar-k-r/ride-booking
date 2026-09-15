@@ -1,0 +1,67 @@
+services:
+
+  web:
+    build: .
+    container_name: ride_web
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    expose:
+      - "8000"
+
+  postgres:
+    image: postgres:16
+    container_name: ride_postgres
+    environment:
+      POSTGRES_DB: ride_booking
+      POSTGRES_USER: ride_user
+      POSTGRES_PASSWORD: ride_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ride_user -d ride_booking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ride_redis
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    container_name: ride_celery
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:alpine
+    container_name: ride_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:

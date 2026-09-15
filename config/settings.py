@@ -58,10 +58,18 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'rides.middleware.RequestTrackingMiddleware',
@@ -99,14 +107,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ride_booking_db_new',
-        'USER': 'postgres',
+        'NAME': os.getenv('DB_NAME', 'ride_booking_db_new'),
+        'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'HOST': os.getenv('DB_HOST', 'postgres'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
