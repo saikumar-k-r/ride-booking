@@ -69,6 +69,7 @@ CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Kolkata"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -148,8 +149,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATIC_URL = 'static/'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 
 # Email
@@ -201,13 +205,10 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "Asia/Kolkata"
+
+
+
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
@@ -231,7 +232,7 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/1"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -335,3 +336,18 @@ LOGGING = {
     },
 },
 }
+# =========================
+# Production Security
+# =========================
+
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    X_FRAME_OPTIONS = "DENY"
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

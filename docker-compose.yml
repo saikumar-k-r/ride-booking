@@ -20,15 +20,15 @@ services:
     image: postgres:16
     container_name: ride_postgres
     environment:
-      POSTGRES_DB: ride_booking
-      POSTGRES_USER: ride_user
-      POSTGRES_PASSWORD: ride_password
+      POSTGRES_DB: ride_booking_db_new
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "S@i995965"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ride_user -d ride_booking"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ride_booking_db_new"]
       interval: 5s
       timeout: 5s
       retries: 10
