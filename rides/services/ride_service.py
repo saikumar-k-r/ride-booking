@@ -179,18 +179,27 @@ def complete_ride(ride_id, user):
 
         return ride
 @transaction.atomic
-def accept_ride(ride_id, driver):
+def accept_ride(ride_id, user):
     ride = Ride.objects.select_for_update().get(id=ride_id)
 
-    if ride.status.name != "REQUESTED":
-        raise ValidationError("Ride is already accepted")
+    if ride.status.code != "REQUESTED":
+        raise ValueError("Ride is already accepted")
 
-    if ride.driver_id != driver.id:
-        raise ValidationError("You are not assigned to this ride")
+    try:
+        driver_profile = DriverProfile.objects.get(user=user)
+    except DriverProfile.DoesNotExist:
+        raise ValueError("Driver profile not found")
 
-    accepted_status = RideStatus.objects.get(name="ACCEPTED")
+    if not driver_profile.is_active:
+        raise ValueError("Driver is not active")
 
+    if ride.driver_id is not None and ride.driver_id != driver_profile.id:
+        raise ValueError("You are not assigned to this ride")
+
+    accepted_status = RideStatus.objects.get(code="ACCEPTED")
+
+    ride.driver = driver_profile
     ride.status = accepted_status
-    ride.save(update_fields=["status"])
+    ride.save(update_fields=["driver", "status"])
 
     return ride

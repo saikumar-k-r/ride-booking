@@ -164,12 +164,13 @@ class RideAcceptanceTest(TestCase):
         )
 
     def create_ride(self):
-        return Ride.objects.create(
-            passenger=self.passenger,
-            pickup_location=self.pickup,
-            drop_location=self.drop,
-            status=self.requested_status,
-        )
+      return Ride.objects.create(
+        passenger=self.passenger,
+        driver=self.driver,
+        pickup_location=self.pickup,
+        drop_location=self.drop,
+        status=self.requested_status,
+    )
 
     def test_ride_acceptance(self):
         ride = self.create_ride()
@@ -440,12 +441,12 @@ class RideAPITest(TestCase):
 
     def create_ride(self):
         return Ride.objects.create(
-            passenger=self.passenger,
-            pickup_location=self.pickup,
-            drop_location=self.drop,
-            status=self.requested,
-        )
-
+         passenger=self.passenger,
+         driver=self.driver,
+         pickup_location=self.pickup,
+         drop_location=self.drop,
+         status=self.requested,
+)
     def test_create_ride(self):
         self.client.force_authenticate(
             user=self.passenger
