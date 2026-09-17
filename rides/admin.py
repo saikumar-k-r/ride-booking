@@ -1,11 +1,12 @@
 from django.contrib import admin
+
 from .models import (
-    VehicleType,
     DriverProfile,
-    Vehicle,
     Location,
-    RideStatus,
     Ride,
+    RideStatus,
+    Vehicle,
+    VehicleType,
 )
 
 

@@ -1,8 +1,7 @@
-from django.db.models import Sum, Avg, Max, Min
+from django.db.models import Avg, Max, Min, Sum
 from django.utils import timezone
 
 from rides.models import Ride
-
 
 # ============================================================
 # RIDE HISTORY

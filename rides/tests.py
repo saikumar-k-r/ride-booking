@@ -1,15 +1,16 @@
 from decimal import Decimal
 
+from channels.db import database_sync_to_async
+from channels.testing import WebsocketCommunicator
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
 from django.test import (
     TestCase,
     TransactionTestCase,
     override_settings,
 )
 from django.urls import reverse
-
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import (
@@ -17,40 +18,35 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from channels.db import database_sync_to_async
-from channels.testing import WebsocketCommunicator
-
 from config.asgi import application
+from notifications.tasks import (
+    send_notification,
+    send_reminder_notification,
+    test_retry_task,
+)
 
 from .models import (
-    Location,
-    RideStatus,
     DriverProfile,
+    Location,
     Ride,
+    RideStatus,
 )
 from .permissions import (
     IsAdminUserRole,
     IsDriverUser,
     IsNormalUser,
 )
-from .services.fare_service import calculate_fare
-from .services.ride_service import accept_ride
 from .services.driver_service import (
     get_active_driver,
     update_driver_location,
 )
+from .services.fare_service import calculate_fare
 from .services.location_service import (
     calculate_distance,
-    validate_location,
     find_nearby_drivers,
+    validate_location,
 )
-
-from notifications.tasks import (
-    send_reminder_notification,
-    send_notification,
-    test_retry_task,
-)
-
+from .services.ride_service import accept_ride
 
 # ============================================================
 # FARE TESTS
@@ -62,14 +58,14 @@ class FareCalculationTest(TestCase):
         result = calculate_fare(
             distance_km=5,
             duration_minutes=10,
-            surge=Decimal("10"),
+            surge=Decimal(10),
         )
 
-        self.assertEqual(result["base_fare"], Decimal("40"))
-        self.assertEqual(result["distance_fare"], Decimal("50"))
-        self.assertEqual(result["time_fare"], Decimal("20"))
-        self.assertEqual(result["surge"], Decimal("10"))
-        self.assertEqual(result["total"], Decimal("120"))
+        self.assertEqual(result["base_fare"], Decimal(40))
+        self.assertEqual(result["distance_fare"], Decimal(50))
+        self.assertEqual(result["time_fare"], Decimal(20))
+        self.assertEqual(result["surge"], Decimal(10))
+        self.assertEqual(result["total"], Decimal(120))
 
 
 # ============================================================
@@ -588,12 +584,12 @@ class BusinessLogicTest(TestCase):
         result = calculate_fare(
             distance_km=5,
             duration_minutes=10,
-            surge=Decimal("10"),
+            surge=Decimal(10),
         )
 
         self.assertEqual(
             result["total"],
-            Decimal("120"),
+            Decimal(120),
         )
 
     def test_driver_availability(self):

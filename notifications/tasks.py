@@ -4,7 +4,7 @@ from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from rides.models import Ride, Notification
+from rides.models import Notification, Ride
 from rides.services.notification_service import create_notification
 
 User = get_user_model()

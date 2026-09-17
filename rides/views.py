@@ -1,47 +1,43 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
-from .services.fare_service import calculate_fare
-from .services.ride_service import accept_ride,update_ride_status
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view,permission_classes
-from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
-from django.db import connection
-from django.db.models import Q, F, Count, Sum, Avg, Min, Max
-from rides.models import Ride
 from django.core.cache import cache
-from .utils.helpers import success_response, error_response
-from rest_framework.throttling import ScopedRateThrottle
-from .permissions import IsRideOwnerOrDriverOrAdmin
-
-from .serializers import DriverLocationSerializer,RideCreateSerializer
-from rides.services.location_service import find_nearby_drivers
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+from django.db import connection
+from django.db.models import Avg, Count, F, Max, Min, Q, Sum
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.pagination import PageNumberPagination
-from .models import Notification
-from .serializers import NotificationSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .permissions import IsAdminUserRole, IsDriverUser
-from .models import DriverProfile, Vehicle,Ride,RideStatus,Location
-from .serializers import DriverSerializer, VehicleSerializer, RideSerializer
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rides.models import Ride
+from rides.services.location_service import find_nearby_drivers
+
+from .models import DriverProfile, Location, Notification, Ride, RideStatus, Vehicle
+from .permissions import IsAdminUserRole, IsDriverUser, IsRideOwnerOrDriverOrAdmin
+from .serializers import (
+    DriverLocationSerializer,
+    DriverSerializer,
+    NotificationSerializer,
+    RideCreateSerializer,
+    RideSerializer,
+    VehicleSerializer,
+)
+from .services.fare_service import calculate_fare
 from .services.ride_queries import (
-    get_ride_history,
     get_active_rides,
-    get_completed_rides,
     get_cancelled_rides,
-    get_driver_ride_history,
+    get_completed_rides,
     get_daily_ride_count,
+    get_driver_ride_history,
+    get_ride_history,
     get_total_completed_rides,
     get_total_fare_earned,
 )
-
+from .services.ride_service import accept_ride, update_ride_status
+from .utils.helpers import error_response, success_response
 
 # =========================
 # DRIVER APIs
@@ -248,7 +244,7 @@ class RideStatusAPIView(APIView):
             status_code=status.HTTP_404_NOT_FOUND
            )
 
-        except ValueError as exc:
+        except ValueError:
             return error_response(
             message="Ride not found.",
             error_code="RIDE_NOT_FOUND",
@@ -273,7 +269,7 @@ class RideAcceptAPIView(APIView):
              status_code=status.HTTP_404_NOT_FOUND
            )
 
-        except ValueError as e:
+        except ValueError:
             return error_response(
              message="Ride not found.",
              error_code="RIDE_NOT_FOUND",
@@ -958,16 +954,16 @@ def distinct_drivers():
 @permission_classes([IsAuthenticated])
 def advanced_queryset_examples(request):
     from .services.advanced_queries import (
-        filter_rides,
+        distinct_drivers,
         exclude_cancelled_rides,
-        search_rides,
+        filter_rides,
+        has_completed_rides,
+        ride_fare_statistics,
+        ride_ids,
+        ride_values,
         rides_updated_after_created,
         rides_with_driver_count,
-        ride_fare_statistics,
-        ride_values,
-        ride_ids,
-        has_completed_rides,
-        distinct_drivers,
+        search_rides,
     )
 
     return success_response(

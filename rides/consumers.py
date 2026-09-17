@@ -1,17 +1,14 @@
 import json
 from urllib.parse import parse_qs
 
-from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-
-from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-
+from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import AccessToken
 
 from .models import Ride
 from .services.driver_service import update_driver_location
-
 
 User = get_user_model()
 

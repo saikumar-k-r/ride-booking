@@ -1,8 +1,10 @@
-from django.db import transaction
 from django.core.cache import cache
-from rides.models import Ride, RideStatus, DriverProfile
+from django.db import transaction
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+
+from rides.models import DriverProfile, Ride, RideStatus
+
+
 def accept_ride(ride_id, user):
     with transaction.atomic():
         # Lock the ride row so two drivers cannot accept it at the same time

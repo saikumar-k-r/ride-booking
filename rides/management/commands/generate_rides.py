@@ -1,8 +1,8 @@
 import random
 import uuid
 
-from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from rides.models import DriverProfile, Location

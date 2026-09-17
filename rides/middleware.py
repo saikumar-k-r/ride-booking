@@ -1,8 +1,8 @@
-import jwt
 from urllib.parse import parse_qs
 
-from channels.middleware import BaseMiddleware
+import jwt
 from channels.db import database_sync_to_async
+from channels.middleware import BaseMiddleware
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
@@ -60,9 +60,9 @@ class JWTAuthMiddleware(BaseMiddleware):
             receive,
             send
         )
+import logging
 import time
 import uuid
-import logging
 
 logger = logging.getLogger("api")
 

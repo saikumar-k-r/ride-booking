@@ -38,6 +38,7 @@ def ride_values():
 # annotate()
 from django.db.models import Count
 
+
 def rides_by_status():
     return Ride.objects.values(
         "status"
@@ -48,6 +49,7 @@ def rides_by_status():
 
 # aggregate()
 from django.db.models import Avg, Max, Min, Sum
+
 
 def ride_statistics():
     return Ride.objects.aggregate(

@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission
 
 
-
 class IsAdminUserRole(BasePermission):
     """
     Admin users can manage all drivers and vehicles.
