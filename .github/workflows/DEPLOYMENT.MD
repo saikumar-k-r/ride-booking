@@ -75,3 +75,26 @@ If a new deployment fails:
 4. Restart the services.
 5. Check Django/Nginx logs.
 6. Verify API health.
+## Deployment Flow
+
+Git Push
+↓
+GitHub Actions
+↓
+Tests
+↓
+Lint
+↓
+Docker Build
+↓
+GHCR Registry
+↓
+Production Environment
+↓
+Health Check
+
+## Health Check
+
+docker compose ps
+
+curl http://localhost/api/health/
